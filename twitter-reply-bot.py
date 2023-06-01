@@ -1,5 +1,4 @@
 import tweepy
-from airtable import Airtable
 from datetime import datetime, timedelta
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
@@ -18,10 +17,6 @@ TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "YourKey")
 TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "YourKey")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN", "YourKey")
 
-AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY", "YourKey")
-AIRTABLE_BASE_KEY = os.getenv("AIRTABLE_BASE_KEY", "YourKey")
-AIRTABLE_TABLE_NAME = os.getenv("AIRTABLE_TABLE_NAME", "YourKey")
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "YourKey")
 
 # TwitterBot class to help us organize our code and manage shared state
@@ -34,7 +29,7 @@ class TwitterBot:
                                          access_token_secret=TWITTER_ACCESS_TOKEN_SECRET,
                                          wait_on_rate_limit=True)
 
-        self.airtable = Airtable(AIRTABLE_BASE_KEY, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY)
+      
         self.twitter_me_id = self.get_me_id()
         self.tweet_response_limit = 35 # How many tweets to respond to each time the program wakes up
 
@@ -96,17 +91,6 @@ class TwitterBot:
             self.mentions_replied_errors += 1
             return
         
-        # Log the response in airtable if it was successful
-        self.airtable.insert({
-            'mentioned_conversation_tweet_id': str(mentioned_conversation_tweet.id),
-            'mentioned_conversation_tweet_text': mentioned_conversation_tweet.text,
-            'tweet_response_id': response_tweet.data['id'],
-            'tweet_response_text': response_text,
-            'tweet_response_created_at' : datetime.utcnow().isoformat(),
-            'mentioned_at' : mention.created_at.isoformat()
-        })
-        return True
-    
     # Returns the ID of the authenticated user for tweet creation purposes
     def get_me_id(self):
         return self.twitter_api.get_me()[0].id
@@ -138,13 +122,7 @@ class TwitterBot:
                                                    expansions=['referenced_tweets.id'],
                                                    tweet_fields=['created_at', 'conversation_id']).data
 
-    # Checking to see if we've already responded to a mention with what's logged in airtable
-    def check_already_responded(self, mentioned_conversation_tweet_id):
-        records = self.airtable.get_all(view='Grid view')
-        for record in records:
-            if record['fields'].get('mentioned_conversation_tweet_id') == str(mentioned_conversation_tweet_id):
-                return True
-        return False
+   
 
     # Run through all mentioned tweets and generate a response
     def respond_to_mentions(self):
