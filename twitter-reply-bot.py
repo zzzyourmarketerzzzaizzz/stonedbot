@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import tweepy
 from airtable import Airtable
 from datetime import datetime, timedelta
